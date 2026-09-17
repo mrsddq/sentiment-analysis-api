@@ -50,3 +50,15 @@ docker build -t sentiment-api .
 ```
 
 MIT licensed.
+
+## Contract and model limitations
+
+Single and batch inputs share the same trimmed, nonempty 20,000-character limit. Batches
+preserve input order, accept at most 100 items, and have a 100,000-character aggregate budget.
+The test suite checks HTTP rejection, batch ordering/counts, emoticons, and sentence-scoped negation.
+
+`confidence` is a heuristic derived from score magnitude, **not a calibrated probability** or
+measured accuracy. This English lexicon baseline has no learned weights, model training, or
+external inference calls. Sarcasm, domain vocabulary, language changes, and long-distance negation
+can fail. Before using it for a consequential decision, evaluate labeled domain data and compare
+against a trained baseline; no production accuracy or throughput is claimed here.
