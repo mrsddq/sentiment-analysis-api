@@ -13,7 +13,7 @@ POSITIVE = {
     "fast": 0.7, "friendly": 1.5, "good": 1.5, "great": 2.0, "happy": 1.8,
     "helpful": 1.5, "impressive": 1.8, "love": 2.4, "loved": 2.4,
     "perfect": 2.5, "recommend": 1.5, "smooth": 1.2, "useful": 1.2,
-    "win": 1.8, "wonderful": 2.5, ":)": 1.5, ":D": 2.0,
+    "win": 1.8, "wonderful": 2.5, ":)": 1.5, ":d": 2.0,
 }
 NEGATIVE = {
     "annoying": -1.8, "awful": -2.6, "bad": -1.7, "broken": -1.7,
@@ -43,7 +43,8 @@ class SentimentAnalyzer:
     """Transparent lexicon sentiment with negation and intensity handling."""
 
     def analyze(self, text: str) -> SentimentResult:
-        tokens = TOKEN_RE.findall(text)
+        matches = list(TOKEN_RE.finditer(text))
+        tokens = [match.group() for match in matches]
         lowered = [token.lower() for token in tokens]
         total = 0.0
         positive_hits: list[str] = []
@@ -53,7 +54,13 @@ class SentimentAnalyzer:
             value = POSITIVE.get(token, NEGATIVE.get(token, 0.0))
             if not value:
                 continue
-            window = lowered[max(0, index - 3):index]
+            window_start = max(0, index - 3)
+            # Negation must not cross a sentence/clause boundary.
+            for previous in range(window_start, index):
+                separator = text[matches[previous].end():matches[previous + 1].start()]
+                if re.search(r"[.!?;:]", separator):
+                    window_start = previous + 1
+            window = lowered[window_start:index]
             if any(word in NEGATIONS for word in window):
                 value *= -0.85
             if index and lowered[index - 1] in BOOSTERS:
